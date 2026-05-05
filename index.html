@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronograma OAB</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1915;
+    --surface2: #242320;
+    --surface3: #2e2c28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede6;
+    --text2: #9a9589;
+    --text3: #5c5a54;
+    --alta: #e85d3a;
+    --alta-bg: rgba(232,93,58,0.12);
+    --alta-border: rgba(232,93,58,0.25);
+    --media: #d4a017;
+    --media-bg: rgba(212,160,23,0.12);
+    --media-border: rgba(212,160,23,0.25);
+    --baixa: #4fa87e;
+    --baixa-bg: rgba(79,168,126,0.12);
+    --baixa-border: rgba(79,168,126,0.25);
+    --accent: #c8b99a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 32px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .main {
+    flex: 1;
+    padding: 40px 36px;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .logo-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .logo-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  /* Sidebar sections */
+  .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
+  .sidebar-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Stats */
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-name { font-size: 12px; color: var(--text2); }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+
+  /* Legend */
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text2);
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+  }
+
+  /* Progress bars */
+  .prog-row { display: flex; flex-direction: column; gap: 3px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); }
+  .prog-track { height: 3px; background: var(--surface3); border-radius: 99px; }
+  .prog-fill { height: 3px; border-radius: 99px; }
+
+  /* Toggle buttons */
+  .toggle-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .toggle-btn {
+    padding: 5px 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .toggle-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .toggle-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .toggle-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .toggle-pct { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); margin-left: auto; padding-left: 2px; flex-shrink: 0; }
+
+  /* Main header */
+  .main-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .main-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .main-subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* Week tabs */
+  .week-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .week-tab {
+    padding: 7px 16px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .week-tab:hover { border-color: var(--border2); color: var(--text); }
+  .week-tab.active { background: var(--accent); color: #1a1915; border-color: var(--accent); font-weight: 500; }
+
+  /* Schedule grid */
+  .schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .day-col { display: flex; flex-direction: column; gap: 8px; }
+
+  .day-header {
+    text-align: center;
+    padding: 10px 6px 8px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .day-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .day-hrs {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .block {
+    border-radius: 8px;
+    padding: 10px 10px 9px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: transform 0.12s, opacity 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .block:hover { transform: translateY(-2px); }
+  .block.alta { background: var(--alta-bg); border-color: var(--alta-border); }
+  .block.media { background: var(--media-bg); border-color: var(--media-border); }
+  .block.baixa { background: var(--baixa-bg); border-color: var(--baixa-border); }
+  .block.revisao { background: var(--surface); border-color: var(--border); cursor: default; }
+
+  .block-pill {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  .alta .block-pill { background: rgba(232,93,58,0.2); color: var(--alta); }
+  .media .block-pill { background: rgba(212,160,23,0.2); color: var(--media); }
+  .baixa .block-pill { background: rgba(79,168,126,0.2); color: var(--baixa); }
+  .revisao .block-pill { background: var(--surface3); color: var(--text3); }
+
+  .block-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .block-duration {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+  }
+  .alta .block-duration { color: rgba(232,93,58,0.7); }
+  .media .block-duration { color: rgba(212,160,23,0.7); }
+  .baixa .block-duration { color: rgba(79,168,126,0.7); }
+
+  .block-check {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .block.done .block-check { background: var(--baixa); border-color: var(--baixa); }
+  .block.done .block-name { text-decoration: line-through; opacity: 0.5; }
+  .block.done { opacity: 0.6; }
+
+  /* Distribution view */
+  .dist-section { display: flex; flex-direction: column; gap: 6px; }
+  .dist-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .dist-row:hover { border-color: var(--border2); }
+  .dist-rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .dist-name { font-size: 13px; color: var(--text); width: 175px; flex-shrink: 0; }
+  .dist-bar-wrap { flex: 1; height: 6px; background: var(--surface3); border-radius: 99px; }
+  .dist-bar { height: 6px; border-radius: 99px; }
+  .dist-hrs {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .dist-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    width: 42px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .badge-alta { background: var(--alta-bg); color: var(--alta); }
+  .badge-media { background: var(--media-bg); color: var(--media); }
+  .badge-baixa { background: var(--baixa-bg); color: var(--baixa); }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .sum-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .sum-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; letter-spacing: 0.02em; }
+  .sum-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sum-val span { font-size: 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-weight: 400; }
+
+  /* View toggle */
+  .view-tabs { display: flex; gap: 4px; }
+  .view-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .view-tab.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+  /* View panels */
+  .view-panel { display: none; }
+  .view-panel.active { display: block; }
+
+  /* Progress overview */
+  .progress-bar-full {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--baixa);
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 11px;
+    color: var(--text2);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 20px; }
+    .main { padding: 24px 16px; }
+    .schedule-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar scrollbar-hide">
+  <div class="logo">
+    <span class="logo-tag">Plano de estudos</span>
+    <span class="logo-title">OAB<br>2026</span>
+    <span class="logo-sub">20h/semana · 16 semanas</span>
+    <span id="syncStatus" style="font-size:10px; margin-top:4px; min-height:14px; display:block;"></span>
+  </div>
+
+  <div class="sidebar-section">
+    <span class="sidebar-section-label">Carga semanal</span>
+    <div class="stat-row"><span class="stat-name">Seg – Sex</span><span class="stat-val">3h/dia</span></div>
+    <div class="stat-row"><span class="stat-name">Sábado</span><span class="stat-val">5h</span></div>
+    <div class="stat-row"><span class="stat-name">Domingo</span><span class="stat-val">folga</span></div>
+    <div class="stat-row" style="margin-top:4px; padding-top:8px; border-top:1px solid var(--border);">
+      <span class="stat-name">Total/semana</span>
+      <span class="stat-val" style="color:var(--accent);">20h</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <span class="sidebar-section-label">Prioridade</span>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--alta);"></div>Alta — 55% do tempo</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--media);"></div>Média — 30% do tempo</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--baixa);"></div>Baixa — 15% do tempo</div>
+  </div>
+
+  <div class="sidebar-section">
+    <span class="sidebar-section-label">Distribuição</span>
+    <div class="prog-row">
+      <div class="prog-label"><span>Alta prioridade</span><span>11h</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:100%; background:var(--alta);"></div></div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-label"><span>Média prioridade</span><span>6h</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:55%; background:var(--media);"></div></div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-label"><span>Baixa prioridade</span><span>3h</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:27%; background:var(--baixa);"></div></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <span class="sidebar-section-label">Navegar</span>
+    <div class="toggle-group" id="weekNav"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="main-header">
+    <div>
+      <h1 class="main-title" id="mainTitle">Semana 1</h1>
+      <p class="main-subtitle" id="mainSubtitle">Alta prioridade — Constitucional · Civil · Processo Penal</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <div class="view-tabs">
+        <button class="view-tab active" onclick="switchView('cronograma', this)">Cronograma</button>
+        <button class="view-tab" onclick="switchView('distribuicao', this)">Distribuição</button>
+        <button class="view-tab" onclick="switchView('progresso', this)">Progresso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <!-- Week tabs -->
+  <div class="week-tabs" id="weekTabs"></div>
+
+  <!-- CRONOGRAMA VIEW -->
+  <div class="view-panel active" id="view-cronograma">
+    <div class="schedule-grid" id="scheduleGrid"></div>
+  </div>
+
+  <!-- DISTRIBUIÇÃO VIEW -->
+  <div class="view-panel" id="view-distribuicao">
+    <div class="dist-section" id="distSection"></div>
+  </div>
+
+  <!-- PROGRESSO VIEW -->
+  <div class="view-panel" id="view-progresso">
+    <div style="display:flex; flex-direction:column; gap:12px;" id="progressSection"></div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const DIAS_SEMANA = ['Seg','Ter','Qua','Qui','Sex','Sáb'];
+const HRS_DIA = [3,3,3,3,3,5];
+
+const materias = [
+  { name:"Dir. Constitucional", short:"Const.", score:36, erros:6, total:6, prioridade:"alta" },
+  { name:"Ética Profissional",  short:"Ética",  score:32, erros:4, total:8, prioridade:"alta" },
+  { name:"Dir. Civil",          short:"Civil",  score:30, erros:5, total:6, prioridade:"alta" },
+  { name:"Proc. Penal",         short:"P.Pen.", score:30, erros:5, total:6, prioridade:"alta" },
+  { name:"Dir. Tributário",     short:"Trib.",  score:25, erros:5, total:5, prioridade:"alta" },
+  { name:"Dir. Empresarial",    short:"Empr.",  score:20, erros:4, total:5, prioridade:"media" },
+  { name:"Dir. Penal",          short:"Penal",  score:18, erros:3, total:6, prioridade:"media" },
+  { name:"Dir. do Trabalho",    short:"Trab.",  score:12, erros:2, total:6, prioridade:"media" },
+  { name:"Dir. Administrativo", short:"Adm.",   score:10, erros:2, total:5, prioridade:"media" },
+  { name:"Proc. Civil",         short:"P.Civ.", score:14, erros:2, total:7, prioridade:"baixa" },
+  { name:"Proc. do Trabalho",   short:"P.Tra.", score:6,  erros:1, total:6, prioridade:"baixa" },
+  { name:"Dir. Eleitoral",      short:"Eleit.", score:4,  erros:2, total:2, prioridade:"baixa" },
+  { name:"Direitos Humanos",    short:"D.Hum.", score:2,  erros:1, total:2, prioridade:"baixa" },
+  { name:"Filosofia do Dir.",   short:"Filos.", score:4,  erros:2, total:2, prioridade:"baixa" },
+  { name:"Dir. Ambiental",      short:"Amb.",   score:2,  erros:1, total:2, prioridade:"baixa" },
+  { name:"ECA",                 short:"ECA",    score:2,  erros:1, total:2, prioridade:"baixa" },
+  { name:"Dir. Internacional",  short:"Inter.", score:2,  erros:1, total:2, prioridade:"baixa" },
+  { name:"Dir. Consumidor",     short:"Cons.",  score:0,  erros:2, total:2, prioridade:"baixa" },
+];
+
+const totalScore = materias.reduce((s,m)=>s+m.score+1,0);
+const totalHrs = 20;
+
+// Alloc hours proportional to score within group
+function allocHrs() {
+  const altas  = materias.filter(m=>m.prioridade==='alta');
+  const medias = materias.filter(m=>m.prioridade==='media');
+  const baixas = materias.filter(m=>m.prioridade==='baixa');
+
+  function alloc(group, budget) {
+    const gs = group.reduce((s,m)=>s+m.score+1,0);
+    return group.map(m=>({ ...m, hrs: Math.max(0.5, Math.round(((m.score+1)/gs)*budget*2)/2) }));
+  }
+
+  return [
+    ...alloc(altas,  totalHrs*0.55),
+    ...alloc(medias, totalHrs*0.30),
+    ...alloc(baixas, totalHrs*0.15),
+  ];
+}
+
+const allocated = allocHrs();
+
+// 16-week plan
+const weekPlans = [
+  { label:"Semana 1",  subtitle:"Alta — Constitucional (base teórica)", focus:["alta"] },
+  { label:"Semana 2",  subtitle:"Alta — Constitucional (aprofundamento)", focus:["alta"] },
+  { label:"Semana 3",  subtitle:"Alta — Ética Profissional + Civil (início)", focus:["alta"] },
+  { label:"Semana 4",  subtitle:"Alta — Civil (aprofundamento) + Proc. Penal", focus:["alta"] },
+  { label:"Semana 5",  subtitle:"Alta — Proc. Penal + Tributário (início)", focus:["alta"] },
+  { label:"Semana 6",  subtitle:"Alta — Tributário + revisão geral alta", focus:["alta"] },
+  { label:"Semana 7",  subtitle:"Média — Empresarial + Penal (início)", focus:["media"] },
+  { label:"Semana 8",  subtitle:"Média — Penal + Dir. do Trabalho", focus:["media"] },
+  { label:"Semana 9",  subtitle:"Média — Administrativo + revisão alta", focus:["media","alta"] },
+  { label:"Semana 10", subtitle:"Média — Revisão geral média + simulado", focus:["media"] },
+  { label:"Semana 11", subtitle:"Baixa — Proc. Civil + Proc. do Trabalho", focus:["baixa"] },
+  { label:"Semana 12", subtitle:"Baixa — Eleitoral · Humanos · Filosofia", focus:["baixa"] },
+  { label:"Semana 13", subtitle:"Baixa — Ambiental · ECA · Internacional · Consumidor", focus:["baixa"] },
+  { label:"Semana 14", subtitle:"Revisão — Alta prioridade (simulado)", focus:["alta"] },
+  { label:"Semana 15", subtitle:"Revisão — Média + Baixa (simulado)", focus:["media","baixa"] },
+  { label:"Semana 16", subtitle:"Revisão final — todas as matérias + prova simulada", focus:["alta","media","baixa"] },
+];
+
+// State
+let currentWeek = 0;
+let done = {};
+let binId = localStorage.getItem('oab_bin_id') || null;
+
+const JKEY = '$2a$10$S/4uyXDBWGlTXakwF8OpV.zY7XdlWJ5mi1G3eAXqLKXzVuAo.XsH6';
+const JBASE = 'https://api.jsonbin.io/v3';
+
+function showStatus(msg, color) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--text3)';
+  clearTimeout(window._statusTimer);
+  window._statusTimer = setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+async function saveDone() {
+  try {
+    showStatus('Salvando...', 'var(--media)');
+    if (!binId) {
+      const res = await fetch(JBASE + '/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY, 'X-Bin-Name': 'oab-cronograma' },
+        body: JSON.stringify({ done })
+      });
+      const data = await res.json();
+      binId = data.metadata.id;
+      localStorage.setItem('oab_bin_id', binId);
+    } else {
+      await fetch(JBASE + '/b/' + binId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JKEY },
+        body: JSON.stringify({ done })
+      });
+    }
+    showStatus('Salvo na nuvem ✓', 'var(--baixa)');
+  } catch(e) {
+    showStatus('Erro ao salvar', 'var(--alta)');
+  }
+}
+
+async function loadDone() {
+  if (!binId) return;
+  try {
+    showStatus('Sincronizando...', 'var(--text3)');
+    const res = await fetch(JBASE + '/b/' + binId + '/latest', {
+      headers: { 'X-Master-Key': JKEY }
+    });
+    const data = await res.json();
+    done = data.record.done || {};
+    showStatus('Sincronizado ✓', 'var(--baixa)');
+  } catch(e) {
+    showStatus('Erro ao carregar', 'var(--alta)');
+  }
+}
+
+// Build schedule blocks per week
+function buildWeekSchedule(weekIdx) {
+  const plan = weekPlans[weekIdx];
+  const focus = plan.focus;
+  let pool = [];
+  if (focus.includes('alta'))  pool = pool.concat(allocated.filter(m=>m.prioridade==='alta'));
+  if (focus.includes('media')) pool = pool.concat(allocated.filter(m=>m.prioridade==='media'));
+  if (focus.includes('baixa')) pool = pool.concat(allocated.filter(m=>m.prioridade==='baixa'));
+  if (!pool.length) pool = allocated;
+
+  const schedule = DIAS_SEMANA.map(d=>({ day:d, blocks:[] }));
+  let pi = 0;
+
+  DIAS_SEMANA.forEach((d,di) => {
+    const availHrs = HRS_DIA[di];
+    let filled = 0;
+    while (filled < availHrs && pi < pool.length*3) {
+      const m = pool[pi % pool.length];
+      const slotHrs = Math.min(m.hrs > 1.5 ? 1.5 : m.hrs, availHrs - filled);
+      const key = `w${weekIdx}_d${di}_b${schedule[di].blocks.length}`;
+      schedule[di].blocks.push({ ...m, slotHrs: +slotHrs.toFixed(1), key });
+      filled += slotHrs;
+      pi++;
+    }
+    if (schedule[di].blocks.length === 0) {
+      schedule[di].blocks.push({ name:'Revisão livre', short:'Rev.', prioridade:'revisao', slotHrs: availHrs, key:`w${weekIdx}_d${di}_rev` });
+    }
+  });
+
+  return schedule;
+}
+
+function renderSummary(weekIdx) {
+  const total = totalHrs;
+  const alta  = +(totalHrs*0.55).toFixed(1);
+  const media = +(totalHrs*0.30).toFixed(1);
+  const baixa = +(totalHrs*0.15).toFixed(1);
+
+  // Count done blocks this week
+  const doneCount = Object.keys(done).filter(k=>k.startsWith(`w${weekIdx}_`)&&done[k]).length;
+  const schedBlocks = buildWeekSchedule(weekIdx).reduce((s,d)=>s+d.blocks.length,0);
+  const pct = schedBlocks ? Math.round(doneCount/schedBlocks*100) : 0;
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="sum-card"><div class="sum-label">Total semanal</div><div class="sum-val">${total}<span>h</span></div></div>
+    <div class="sum-card"><div class="sum-label">Alta prioridade</div><div class="sum-val" style="color:var(--alta)">${alta}<span>h</span></div></div>
+    <div class="sum-card"><div class="sum-label">Média prioridade</div><div class="sum-val" style="color:var(--media)">${media}<span>h</span></div></div>
+    <div class="sum-card"><div class="sum-label">Baixa prioridade</div><div class="sum-val" style="color:var(--baixa)">${baixa}<span>h</span></div></div>
+    <div class="sum-card"><div class="sum-label">Concluído</div><div class="sum-val" style="color:var(--accent)">${pct}<span>%</span></div></div>
+  `;
+}
+
+function renderSchedule(weekIdx) {
+  const schedule = buildWeekSchedule(weekIdx);
+  let html = '';
+  schedule.forEach((day, di) => {
+    html += `<div class="day-col">
+      <div class="day-header">
+        <div class="day-name">${day.day}</div>
+        <div class="day-hrs">${HRS_DIA[di]}h</div>
+      </div>`;
+    day.blocks.forEach(b => {
+      const isDone = done[b.key];
+      html += `<div class="block ${b.prioridade}${isDone?' done':''}" id="block_${b.key}">
+        <div class="block-check" onclick="toggleDone('${b.key}', event)">
+          ${isDone ? '<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+        </div>
+        <div class="block-pill">${b.prioridade==='revisao'?'revisão':b.prioridade}</div>
+        <div class="block-name">${b.name}</div>
+        <div class="block-duration">${b.slotHrs}h</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('scheduleGrid').innerHTML = html;
+}
+
+function toggleDone(key, e) {
+  e.stopPropagation();
+  done[key] = !done[key];
+  saveDone();
+  renderWeek(currentWeek);
+}
+
+function renderDist() {
+  const maxH = Math.max(...allocated.map(m=>m.hrs));
+  let html = '';
+  allocated.forEach((m,i) => {
+    const pct = Math.round(m.hrs/maxH*100);
+    const color = m.prioridade==='alta' ? 'var(--alta)' : m.prioridade==='media' ? 'var(--media)' : 'var(--baixa)';
+    html += `<div class="dist-row">
+      <span class="dist-rank">${String(i+1).padStart(2,'0')}</span>
+      <span class="dist-name">${m.name}</span>
+      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%; background:${color};"></div></div>
+      <span class="dist-hrs">${m.hrs}h</span>
+      <span class="dist-badge badge-${m.prioridade}">${m.prioridade}</span>
+    </div>`;
+  });
+  document.getElementById('distSection').innerHTML = html;
+}
+
+function renderProgress() {
+  let html = `<div style="margin-bottom:16px;">
+    <div class="progress-label" style="margin-bottom:6px;"><span>Progresso geral (todas as semanas)</span><span id="globalPct">0%</span></div>
+    <div class="progress-bar-full"><div class="progress-bar-fill" id="globalBar" style="width:0%"></div></div>
+  </div>`;
+
+  weekPlans.forEach((w,wi) => {
+    const sched = buildWeekSchedule(wi);
+    const total = sched.reduce((s,d)=>s+d.blocks.length,0);
+    const doneN = Object.keys(done).filter(k=>k.startsWith(`w${wi}_`)&&done[k]).length;
+    const pct = total ? Math.round(doneN/total*100) : 0;
+    html += `<div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px;">
+      <div class="progress-label" style="margin-bottom:6px;"><span style="color:var(--text); font-size:13px;">${w.label}</span><span>${doneN}/${total} blocos · ${pct}%</span></div>
+      <div class="progress-bar-full"><div class="progress-bar-fill" style="width:${pct}%; background:${pct===100?'var(--baixa)':'var(--accent)'};"></div></div>
+    </div>`;
+  });
+
+  document.getElementById('progressSection').innerHTML = html;
+
+  const allBlocks = weekPlans.flatMap((_,wi)=>{
+    const s=buildWeekSchedule(wi);
+    return s.flatMap(d=>d.blocks.map(b=>b.key));
+  });
+  const totalDone = allBlocks.filter(k=>done[k]).length;
+  const gPct = allBlocks.length ? Math.round(totalDone/allBlocks.length*100) : 0;
+  const gBar = document.getElementById('globalBar');
+  const gPctEl = document.getElementById('globalPct');
+  if (gBar) gBar.style.width = gPct+'%';
+  if (gPctEl) gPctEl.textContent = gPct+'%';
+}
+
+function renderWeekTabs() {
+  let html = '';
+  weekPlans.forEach((w,i) => {
+    html += `<button class="week-tab${i===currentWeek?' active':''}" onclick="selectWeek(${i})">${w.label}</button>`;
+  });
+  document.getElementById('weekTabs').innerHTML = html;
+}
+
+function renderWeekNav() {
+  let html = '';
+  weekPlans.forEach((w,i) => {
+    const sched = buildWeekSchedule(i);
+    const total = sched.reduce((s,d)=>s+d.blocks.length,0);
+    const doneN = Object.keys(done).filter(k=>k.startsWith(`w${i}_`)&&done[k]).length;
+    const pct = total ? Math.round(doneN/total*100) : 0;
+    const f = weekPlans[i].focus[0];
+    const color = f==='alta'?'var(--alta)':f==='media'?'var(--media)':'var(--baixa)';
+    html += `<button class="toggle-btn${i===currentWeek?' active':''}" onclick="selectWeek(${i})">
+      <div class="toggle-dot" style="background:${color}"></div>
+      <span>S${i+1}</span>
+    </button>`;
+  });
+  document.getElementById('weekNav').innerHTML = html;
+}
+
+function renderWeek(weekIdx) {
+  currentWeek = weekIdx;
+  document.getElementById('mainTitle').textContent = weekPlans[weekIdx].label;
+  document.getElementById('mainSubtitle').textContent = weekPlans[weekIdx].subtitle;
+  renderWeekTabs();
+  renderWeekNav();
+  renderSummary(weekIdx);
+  renderSchedule(weekIdx);
+  renderDist();
+  renderProgress();
+}
+
+function selectWeek(i) {
+  renderWeek(i);
+}
+
+function switchView(name, btn) {
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.view-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='progresso') renderProgress();
+}
+
+// Init
+loadDone().then(() => renderWeek(0));
+</script>
+</body>
+</html>
