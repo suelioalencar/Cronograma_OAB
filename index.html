@@ -406,6 +406,7 @@
     <span class="logo-tag">Plano de estudos</span>
     <span class="logo-title">OAB<br>2026</span>
     <span class="logo-sub">20h/semana · 16 semanas</span>
+    <span id="syncStatus" style="font-size:10px; margin-top:4px; min-height:14px; display:block;"></span>
   </div>
 
   <div class="sidebar-section">
@@ -559,9 +560,91 @@ const weekPlans = [
 
 // State
 let currentWeek = 0;
-let done = JSON.parse(localStorage.getItem('oab_done')||'{}');
+let done = {};
+let binId = localStorage.getItem('oab_bin_id') || null;
 
-function saveDone() { localStorage.setItem('oab_done', JSON.stringify(done)); }
+const JMASTER = '$2a$10$kOloSSsgG5WxhvCMWHDstO08/bvVf8HfYuk7Epq3OeMJZHkb2GN62';
+const JACCESS = '$2a$10$S/4uyXDBWGlTXakwF8OpV.zY7XdlWJ5mi1G3eAXqLKXzVuAo.XsH6';
+const JBASE = 'https://api.jsonbin.io/v3';
+
+function showStatus(msg, color) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--text3)';
+  clearTimeout(window._statusTimer);
+  window._statusTimer = setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+async function saveDone() {
+  // Salva sempre no localStorage como base
+  localStorage.setItem('oab_done', JSON.stringify(done));
+
+  if (!JMASTER || JMASTER.length < 10) {
+    showStatus('Salvo localmente ✓', 'var(--baixa)');
+    return;
+  }
+  try {
+    showStatus('Salvando na nuvem...', 'var(--media)');
+    if (!binId) {
+      const res = await fetch(JBASE + '/b', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JMASTER,
+          'X-Access-Key': JACCESS,
+          'X-Bin-Name': 'oab-cronograma',
+          'X-Bin-Private': 'false'
+        },
+        body: JSON.stringify({ done })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      binId = data.metadata.id;
+      localStorage.setItem('oab_bin_id', binId);
+    } else {
+      const res = await fetch(JBASE + '/b/' + binId, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JMASTER,
+          'X-Access-Key': JACCESS
+        },
+        body: JSON.stringify({ done })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+    }
+    showStatus('Salvo na nuvem ✓', 'var(--baixa)');
+  } catch(e) {
+    console.error('saveDone error:', e);
+    showStatus('Local ✓ (nuvem falhou)', 'var(--media)');
+  }
+}
+
+async function loadDone() {
+  // Carrega localStorage primeiro (fallback instantâneo)
+  const local = localStorage.getItem('oab_done');
+  if (local) done = JSON.parse(local);
+
+  if (!binId || !JMASTER || JMASTER.length < 10) return;
+  try {
+    showStatus('Sincronizando...', 'var(--text3)');
+    const res = await fetch(JBASE + '/b/' + binId + '/latest', {
+      headers: {
+        'X-Master-Key': JMASTER,
+        'X-Access-Key': JACCESS
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    done = data.record.done || {};
+    localStorage.setItem('oab_done', JSON.stringify(done));
+    showStatus('Sincronizado ✓', 'var(--baixa)');
+  } catch(e) {
+    console.error('loadDone error:', e);
+    showStatus('Usando dados locais', 'var(--text3)');
+  }
+}
 
 // Build schedule blocks per week
 function buildWeekSchedule(weekIdx) {
@@ -745,7 +828,7 @@ function switchView(name, btn) {
 }
 
 // Init
-renderWeek(0);
+loadDone().then(() => renderWeek(0));
 </script>
 </body>
 </html>
