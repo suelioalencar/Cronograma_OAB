@@ -406,7 +406,6 @@
     <span class="logo-tag">Plano de estudos</span>
     <span class="logo-title">OAB<br>2026</span>
     <span class="logo-sub">20h/semana · 16 semanas</span>
-    <span id="syncStatus" style="font-size:10px; margin-top:4px; min-height:14px; display:block;"></span>
   </div>
 
   <div class="sidebar-section">
@@ -560,71 +559,9 @@ const weekPlans = [
 
 // State
 let currentWeek = 0;
-let done = {};
-let binId = localStorage.getItem('oab_bin_id') || null;
+let done = JSON.parse(localStorage.getItem('oab_done')||'{}');
 
-const JKEY = '$2a$10$kOloSSsgG5WxhvCMWHDstO08/bvVf8HfYuk7Epq3OeMJZHkb2GN62';
-const JBASE = 'https://api.jsonbin.io/v3';
-
-function showStatus(msg, color) {
-  const el = document.getElementById('syncStatus');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color || 'var(--text3)';
-  clearTimeout(window._statusTimer);
-  window._statusTimer = setTimeout(() => { el.textContent = ''; }, 3000);
-}
-
-async function saveDone() {
-  try {
-    showStatus('Salvando...', 'var(--media)');
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Master-Key': JKEY,
-      'X-Bin-Private': 'false'
-    };
-    if (!binId) {
-      headers['X-Bin-Name'] = 'oab-cronograma';
-      const res = await fetch(JBASE + '/b', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ done })
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      binId = data.metadata.id;
-      localStorage.setItem('oab_bin_id', binId);
-    } else {
-      const res = await fetch(JBASE + '/b/' + binId, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ done })
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-    }
-    showStatus('Salvo na nuvem ✓', 'var(--baixa)');
-  } catch(e) {
-    console.error('saveDone error:', e);
-    showStatus('Erro: ' + e.message, 'var(--alta)');
-  }
-}
-
-async function loadDone() {
-  if (!binId) return;
-  try {
-    showStatus('Sincronizando...', 'var(--text3)');
-    const res = await fetch(JBASE + '/b/' + binId + '/latest', {
-      headers: { 'X-Master-Key': JKEY, 'X-Bin-Private': 'false' }
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    done = data.record.done || {};
-    showStatus('Sincronizado ✓', 'var(--baixa)');
-  } catch(e) {
-    console.error('loadDone error:', e);
-    showStatus('Erro ao carregar: ' + e.message, 'var(--alta)');
-  }
-}
+function saveDone() { localStorage.setItem('oab_done', JSON.stringify(done)); }
 
 // Build schedule blocks per week
 function buildWeekSchedule(weekIdx) {
@@ -808,7 +745,7 @@ function switchView(name, btn) {
 }
 
 // Init
-loadDone().then(() => renderWeek(0));
+renderWeek(0);
 </script>
 </body>
 </html>
